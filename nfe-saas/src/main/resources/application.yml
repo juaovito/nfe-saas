@@ -36,7 +36,5 @@ security:
 crypto:
   aes-master-key: ${AES_MASTER_KEY}
 
-
-
-  certificados:
+certificados:
   storage-path: ./certificados
