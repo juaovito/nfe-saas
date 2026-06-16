@@ -3,6 +3,7 @@ package br.com.nfesaas.api.controller;
 import br.com.nfesaas.api.dto.request.NotaFiscalServicoRequest;
 import br.com.nfesaas.api.dto.response.NotaFiscalServicoResponse;
 import br.com.nfesaas.application.nfeservico.NotaFiscalServicoService;
+import br.com.nfesaas.application.nfeservico.NfseTransmissaoService;
 import br.com.nfesaas.domain.enums.StatusNota;
 import br.com.nfesaas.security.TenantContext;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class NotaFiscalServicoController {
 
     private final NotaFiscalServicoService notaFiscalServicoService;
+    private final NfseTransmissaoService nfseTransmissaoService;
 
     @GetMapping
     @Operation(summary = "Listar NFS-e da empresa autenticada, opcionalmente filtrando por status")
@@ -39,33 +41,48 @@ public class NotaFiscalServicoController {
     }
 
     @PostMapping
-    @Operation(summary = "Emitir nova DPS/NFS-e")
-    public ResponseEntity<NotaFiscalServicoResponse> emitir(@Valid @RequestBody NotaFiscalServicoRequest req) {
+    @Operation(summary = "Criar rascunho de NFS-e (sem transmitir)")
+    public ResponseEntity<NotaFiscalServicoResponse> emitir(
+            @Valid @RequestBody NotaFiscalServicoRequest req) {
         UUID empresaId = TenantContext.get();
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(NotaFiscalServicoResponse.from(notaFiscalServicoService.emitir(empresaId, req)));
+            .body(NotaFiscalServicoResponse.from(
+                notaFiscalServicoService.emitir(empresaId, req)));
+    }
+
+    @PostMapping("/{id}/transmitir")
+    @Operation(summary = "Transmitir NFS-e para a prefeitura (assina e envia)")
+    public ResponseEntity<NotaFiscalServicoResponse> transmitir(@PathVariable UUID id) {
+        UUID empresaId = TenantContext.get();
+        NotaFiscalServicoResponse resposta = NotaFiscalServicoResponse.from(
+                nfseTransmissaoService.transmitir(empresaId, id));
+        return ResponseEntity.ok(resposta);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Buscar NFS-e por ID")
     public ResponseEntity<NotaFiscalServicoResponse> buscar(@PathVariable UUID id) {
         UUID empresaId = TenantContext.get();
-        return ResponseEntity.ok(NotaFiscalServicoResponse.from(notaFiscalServicoService.buscarPorId(empresaId, id)));
+        return ResponseEntity.ok(NotaFiscalServicoResponse.from(
+                notaFiscalServicoService.buscarPorId(empresaId, id)));
     }
 
     @GetMapping("/chave/{chaveAcesso}")
     @Operation(summary = "Buscar NFS-e pela chave de acesso")
-    public ResponseEntity<NotaFiscalServicoResponse> buscarPorChave(@PathVariable String chaveAcesso) {
-        return ResponseEntity.ok(NotaFiscalServicoResponse.from(notaFiscalServicoService.buscarPorChave(chaveAcesso)));
+    public ResponseEntity<NotaFiscalServicoResponse> buscarPorChave(
+            @PathVariable String chaveAcesso) {
+        return ResponseEntity.ok(NotaFiscalServicoResponse.from(
+                notaFiscalServicoService.buscarPorChave(chaveAcesso)));
     }
 
     @PostMapping("/{id}/cancelar")
     @Operation(summary = "Cancelar NFS-e autorizada")
-    public ResponseEntity<NotaFiscalServicoResponse> cancelar(@PathVariable UUID id,
-                                                               @RequestBody CancelamentoRequest req) {
+    public ResponseEntity<NotaFiscalServicoResponse> cancelar(
+            @PathVariable UUID id,
+            @RequestBody CancelamentoRequest req) {
         UUID empresaId = TenantContext.get();
         return ResponseEntity.ok(NotaFiscalServicoResponse.from(
-            notaFiscalServicoService.cancelar(empresaId, id, req.justificativa)));
+                notaFiscalServicoService.cancelar(empresaId, id, req.justificativa)));
     }
 
     public static class CancelamentoRequest {
