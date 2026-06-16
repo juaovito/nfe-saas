@@ -38,3 +38,8 @@ crypto:
 
 certificados:
   storage-path: ./certificados
+
+nfse:
+  maringa:
+    usuario: ${NFSE_USUARIO:}
+    senha: ${NFSE_SENHA:}
